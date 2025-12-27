@@ -25,14 +25,10 @@ class HyperparameterTuner:
     @staticmethod
     def _create_optimizer(name: str, lr: float) -> Optimizer:
         name = name.lower()
-        if name == "sgd":
-            return SGD(lr=lr)
-        if name == "momentum":
-            return Momentum(lr=lr)
-        if name == "adagrad":
-            return AdaGrad(lr=lr)
-        if name == "adam":
-            return Adam(lr=lr)
+        if name == "sgd": return SGD(lr=lr)
+        if name == "momentum": return Momentum(lr=lr)
+        if name == "adagrad": return AdaGrad(lr=lr)
+        if name == "adam": return Adam(lr=lr)
         raise ValueError(f"Unknown optimizer_type: {name}")
 
     def grid_search(

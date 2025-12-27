@@ -1,5 +1,5 @@
 from .layers import Layer, Dense
-from .activations import Relu, Sigmoid, Tanh, Identity
+from .activations import Relu, Sigmoid, Tanh, Linear
 from .regularization import Dropout, BatchNormalization
 from .losses import SoftmaxWithLoss, MeanSquaredError
 from .optimizers import Optimizer, SGD, Momentum, AdaGrad, Adam
@@ -13,7 +13,7 @@ __all__ = [
     "Relu",
     "Sigmoid",
     "Tanh",
-    "Identity",
+    "Linear",
     "Dropout",
     "BatchNormalization",
     "SoftmaxWithLoss",

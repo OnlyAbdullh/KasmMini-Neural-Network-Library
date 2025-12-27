@@ -13,7 +13,7 @@ from KasmMiniNN import (
     SoftmaxWithLoss,
     NeuralNetwork,
     SGD,
-    Trainer,
+    Trainer, HyperparameterTuner,
 )
 
 
@@ -92,37 +92,86 @@ def plot_history(history):
     plt.savefig("training_curves.png", dpi=200)
     print("Saved training_curves.png")
 
-def main():
+
+def main(mode: str = "train"):
     x_train, x_test, t_train, t_test = prepare_mnist()
 
-    network = build_required_network(
-        input_dim=x_train.shape[1],
-        hidden1=32,
-        hidden2=16,
-        num_classes=t_train.shape[1],
-    )
+    if mode == "tune":
+        print("Searching for best hyperparameters...")
+        print("=" * 60)
 
-    optimizer = SGD(lr=0.1)
-    trainer = Trainer(
-        network,
-        optimizer,
-        x_train,
-        t_train,
-        x_test,
-        t_test,
-        epochs=5,
-        batch_size=100,
-        eval_interval=10,
-    )
+        split_idx = int(len(x_train) * 0.85)
+        x_train_split, x_val_split = x_train[:split_idx], x_train[split_idx:]
+        t_train_split, t_val_split = t_train[:split_idx], t_train[split_idx:]
+        tuner = HyperparameterTuner(
+            build_network=lambda config: build_required_network(
+                input_dim=x_train.shape[1],
+                hidden1=32,
+                hidden2=16,
+                num_classes=t_train.shape[1],
+            ),
+            x_train=x_train_split,
+            t_train=t_train_split,
+            x_val=x_val_split,
+            t_val=t_val_split,
+        )
 
-    history = trainer.fit()
+        results = tuner.grid_search(
+            learning_rates=[0.01, 0.001, 0.1],
+            batch_sizes=[64, 100, 128],
+            hidden_sizes=[32, 64, 128],
+            optimizer_types=["sgd", "momentum", "adam"],
+            dropout_rates=[0.0, 0.2, 0.3],
+            epochs_list=[10],
+        )
 
-    final_train_acc = history["train_accuracy"][-1]
-    final_val_acc = history["val_accuracy"][-1]
-    print(f"\nfinal Result - Train Acc: {final_train_acc:.4f} | Val Acc: {final_val_acc:.4f}")
+        print("\n" + "=" * 60)
+        print(f"Best Validation Accuracy: {results['best_score']:.4f}")
+        print("\nBest Parameters:")
+        for param, value in results["best_params"].items():
+            print(f"  {param}: {value}")
+        return
+    else:
+        print("=" * 60)
+        network = build_required_network(
+            input_dim=x_train.shape[1],
+            hidden1=32,
+            hidden2=16,
+            num_classes=t_train.shape[1],
+        )
 
-    plot_history(history)
+        optimizer = SGD(lr=0.1)
+        trainer = Trainer(
+            network,
+            optimizer,
+            x_train,
+            t_train,
+            x_test,
+            t_test,
+            epochs=5,
+            batch_size=100,
+            eval_interval=10,
+        )
+
+        history = trainer.fit()
+
+        final_train_acc = history["train_accuracy"][-1]
+        final_val_acc = history["val_accuracy"][-1]
+        print(f"\nfinal Result - Train Acc: {final_train_acc:.4f} | Val Acc: {final_val_acc:.4f}")
+
+        plot_history(history)
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="train",
+        choices=["train", "tune"],
+    )
+
+    args = parser.parse_args()
+    main(mode=args.mode)

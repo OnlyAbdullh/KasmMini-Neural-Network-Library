@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 from .layers import Layer, Dense
 from .losses import SoftmaxWithLoss, MeanSquaredError
 
@@ -63,8 +63,8 @@ class NeuralNetwork:
         return float(np.sum(preds == t) / x.shape[0])
 
     def gradient(self, x: np.ndarray, t: np.ndarray) -> Dict[str, np.ndarray]:
-        _ = self.loss(x, t, train=True)
-        dout = self.loss_layer.backward()
+        self.loss(x, t, train=True)
+        dout = self.loss_layer.backward(1.0)
         for layer in reversed(self.layers):
             dout = layer.backward(dout)
         self._aggregate_params()
@@ -77,7 +77,7 @@ def build_mlp(
     hidden_sizes: List[int],
     output_size: int,
     use_batchnorm: bool = False,
-    dropout_rate: float | None = None,
+    dropout_rate: Optional[float] = None,
 ) -> NeuralNetwork:
     from .activations import Relu
     from .regularization import BatchNormalization, Dropout
@@ -87,9 +87,9 @@ def build_mlp(
     for i in range(len(layer_sizes) - 1):
         layers.append(Dense(layer_sizes[i], layer_sizes[i + 1]))
         if i < len(hidden_sizes):
-            layers.append(Relu())
             if use_batchnorm:
                 layers.append(BatchNormalization(layer_sizes[i + 1]))
+            layers.append(Relu())
             if dropout_rate is not None:
                 layers.append(Dropout(dropout_rate))
     loss_layer = SoftmaxWithLoss()

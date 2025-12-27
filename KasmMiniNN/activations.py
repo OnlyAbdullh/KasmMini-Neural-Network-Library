@@ -50,9 +50,7 @@ class Tanh(Layer):
             raise RuntimeError("forward must be called before backward")
         return dout * (1.0 - self.out ** 2)
 
-
-class Identity(Layer):
-
+class Linear(Layer):
     def forward(self, x: np.ndarray, train: bool = True) -> np.ndarray:
         return x
 

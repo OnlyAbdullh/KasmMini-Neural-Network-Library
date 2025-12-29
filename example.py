@@ -94,7 +94,7 @@ def plot_history(history):
 
 
 def main(mode: str = "train"):
-    x_train, x_test, t_train, t_test = prepare_mnist()
+    x_train, x_test, t_train, t_test = prepare_iris()
 
     if mode == "tune":
         print("Searching for best hyperparameters...")
@@ -122,7 +122,7 @@ def main(mode: str = "train"):
             hidden_sizes=[32, 64, 128],
             optimizer_types=["sgd", "momentum", "adam"],
             dropout_rates=[0.0, 0.2, 0.3],
-            epochs_list=[10],
+            epochs_list=[1,2],
         )
 
         print("\n" + "=" * 60)

@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict
 
 
 class Layer:

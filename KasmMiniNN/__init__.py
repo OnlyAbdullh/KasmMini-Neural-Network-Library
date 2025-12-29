@@ -7,6 +7,9 @@ from .network import NeuralNetwork, build_mlp
 from .trainer import Trainer
 from .hyperparameter import HyperparameterTuner
 
+__version__ = "0.1.0"
+__author__ = "OnlyOne"
+
 __all__ = [
     "Layer",
     "Dense",

@@ -8,7 +8,7 @@ class Dropout(Layer):
         if not 0.0 <= dropout_ratio < 1.0:
             raise ValueError("dropout_ratio must be in [0,1)")
         self.dropout_ratio = dropout_ratio
-        self.mask: Optional[np.ndarray] = None
+        self.mask: Optional[np.ndarray]
 
     def forward(self, x: np.ndarray, train: bool = True) -> np.ndarray:
         if train:
@@ -26,11 +26,11 @@ class Dropout(Layer):
 class BatchNormalization(Layer):
 
     def __init__(
-        self,
-        feature_size: int,
-        momentum: float = 0.9,
-        running_mean: Optional[np.ndarray] = None,
-        running_var: Optional[np.ndarray] = None,
+            self,
+            feature_size: int,
+            momentum: float = 0.9,
+            running_mean: Optional[np.ndarray] = None,
+            running_var: Optional[np.ndarray] = None,
     ):
         if feature_size <= 0:
             raise ValueError("feature_size must be positive")
@@ -66,12 +66,12 @@ class BatchNormalization(Layer):
             self.std = std
 
             self.running_mean = (
-                self.momentum * self.running_mean +
-                (1 - self.momentum) * mu
+                    self.momentum * self.running_mean +
+                    (1 - self.momentum) * mu
             )
             self.running_var = (
-                self.momentum * self.running_var +
-                (1 - self.momentum) * var
+                    self.momentum * self.running_var +
+                    (1 - self.momentum) * var
             )
         else:
             xc = x - self.running_mean

@@ -60,7 +60,7 @@ class NeuralNetwork:
         preds = np.argmax(scores, axis=1)
         if t.ndim != 1:
             t = np.argmax(t, axis=1)
-        return float(np.sum(preds == t) / x.shape[0])
+        return np.sum(preds == t).astype(float) / float(x.shape[0])
 
     def gradient(self, x: np.ndarray, t: np.ndarray) -> Dict[str, np.ndarray]:
         self.loss(x, t, train=True)
@@ -73,11 +73,11 @@ class NeuralNetwork:
 
 
 def build_mlp(
-    input_size: int,
-    hidden_sizes: List[int],
-    output_size: int,
-    use_batchnorm: bool = False,
-    dropout_rate: Optional[float] = None,
+        input_size: int,
+        hidden_sizes: List[int],
+        output_size: int,
+        use_batchnorm: bool = False,
+        dropout_rate: Optional[float] = None,
 ) -> NeuralNetwork:
     from .activations import Relu
     from .regularization import BatchNormalization, Dropout

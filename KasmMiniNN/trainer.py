@@ -1,21 +1,21 @@
 import numpy as np
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Generator
 from .network import NeuralNetwork
 from .optimizers import Optimizer
 
 
 class Trainer:
     def __init__(
-        self,
-        network: NeuralNetwork,
-        optimizer: Optimizer,
-        x_train: np.ndarray,
-        t_train: np.ndarray,
-        x_val: np.ndarray,
-        t_val: np.ndarray,
-        epochs: int = 20,
-        batch_size: int = 32,
-        eval_interval: int = 1,
+            self,
+            network: NeuralNetwork,
+            optimizer: Optimizer,
+            x_train: np.ndarray,
+            t_train: np.ndarray,
+            x_val: np.ndarray,
+            t_val: np.ndarray,
+            epochs: int = 20,
+            batch_size: int = 32,
+            eval_interval: int = 1,
     ):
         if batch_size <= 0:
             raise ValueError("batch_size must be positive")
@@ -36,7 +36,7 @@ class Trainer:
             "val_accuracy": []
         }
 
-    def _iterate_minibatches(self) -> Tuple[np.ndarray, np.ndarray]:
+    def _iterate_minibatches(self) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
         idx = np.random.permutation(self.train_size)
         for start in range(0, self.train_size, self.batch_size):
             batch_idx = idx[start:start + self.batch_size]

@@ -22,11 +22,11 @@ class Layer:
 class Dense(Layer):
 
     def __init__(
-        self,
-        input_size: int,
-        output_size: int,
-        weight_init: str = "he",
-        bias_init: float = 0.0,
+            self,
+            input_size: int,
+            output_size: int,
+            weight_init: str = "he",
+            bias_init: float = 0.0,
     ):
         if input_size <= 0 or output_size <= 0:
             raise ValueError("input_size and output_size must be positive")
@@ -58,4 +58,3 @@ class Dense(Layer):
         if self.dW is None or self.db is None:
             return {"W": np.zeros_like(self.W), "b": np.zeros_like(self.b)}
         return {"W": self.dW, "b": self.db}
-

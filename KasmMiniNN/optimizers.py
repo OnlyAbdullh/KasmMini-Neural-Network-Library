@@ -75,7 +75,7 @@ class Adam(Optimizer):
         self.iter += 1
 
         lr_t = self.lr * np.sqrt(1.0 - self.beta2 ** self.iter) / (
-            1.0 - self.beta1 ** self.iter
+                1.0 - self.beta1 ** self.iter
         )
 
         for key in params.keys():

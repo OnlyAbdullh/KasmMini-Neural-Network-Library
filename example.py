@@ -41,6 +41,7 @@ def prepare_iris():
     t_test = ohe.transform(t_test_raw.reshape(-1, 1))
     return x_train, x_test, t_train, t_test
 
+
 def prepare_mnist(test_size=10000, random_state=0):
     X, y = fetch_openml(
         'mnist_784',
@@ -49,7 +50,7 @@ def prepare_mnist(test_size=10000, random_state=0):
         as_frame=False
     )
 
-    X = X.astype(np.float32) / 255.0   # normalization
+    X = X.astype(np.float32) / 255.0  # normalization
     y = y.astype(np.int64)
 
     x_train, x_test, t_train_raw, t_test_raw = train_test_split(
@@ -69,7 +70,6 @@ def prepare_mnist(test_size=10000, random_state=0):
 
 
 def plot_history(history):
-
     plt.figure(figsize=(12, 4))
 
     plt.subplot(1, 2, 1)
@@ -93,8 +93,17 @@ def plot_history(history):
     print("Saved training_curves.png")
 
 
-def main(mode: str = "train"):
+def main():
     x_train, x_test, t_train, t_test = prepare_iris()
+    print("choose the mode:")
+    print(" 1-Train the model (train)")
+    print(" 2-hyperparameter tuning (tune)")
+
+    choice = input("enter 1 or 2 :").strip()
+    if choice == "2":
+        mode = "tune"
+    else:
+        mode = "train"
 
     if mode == "tune":
         print("Searching for best hyperparameters...")
@@ -122,7 +131,7 @@ def main(mode: str = "train"):
             hidden_sizes=[32, 64, 128],
             optimizer_types=["sgd", "momentum", "adam"],
             dropout_rates=[0.0, 0.2, 0.3],
-            epochs_list=[1,2],
+            epochs_list=[1, 2],
         )
 
         print("\n" + "=" * 60)
@@ -148,7 +157,7 @@ def main(mode: str = "train"):
             t_train,
             x_test,
             t_test,
-            epochs=5,
+            epochs=20,
             batch_size=100,
             eval_interval=10,
         )
@@ -163,15 +172,4 @@ def main(mode: str = "train"):
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--mode",
-        type=str,
-        default="train",
-        choices=["train", "tune"],
-    )
-
-    args = parser.parse_args()
-    main(mode=args.mode)
+    main()

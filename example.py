@@ -1,3 +1,4 @@
+from typing import Dict, Any
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_iris
@@ -13,7 +14,7 @@ from KasmMiniNN import (
     SoftmaxWithLoss,
     NeuralNetwork,
     SGD,
-    Trainer, HyperparameterTuner,
+    Trainer, HyperparameterTuner, Tanh, Dropout,
 )
 
 
@@ -26,6 +27,29 @@ def build_required_network(input_dim: int, hidden1: int, hidden2: int, num_class
         Relu(),
         Dense(hidden2, num_classes),
     ]
+    return NeuralNetwork(layers, SoftmaxWithLoss())
+
+
+def build_network_from_config(input_dim: int, num_classes: int, config: Dict[str, Any]) -> NeuralNetwork:
+    hidden_size = config["hidden_size"]
+    num_layers = config["num_layers"]
+    dropout_rate = config["dropout_rate"]
+
+    activations = {"relu": Relu, "sigmoid": Sigmoid, "tanh": Tanh}
+    Act = activations.get(config["activation"], Relu)
+
+    layers = []
+    in_dim = input_dim
+
+    for _ in range(num_layers):
+        layers.append(Dense(in_dim, hidden_size))
+        layers.append(BatchNormalization(hidden_size))
+        layers.append(Act())
+        if dropout_rate > 0.0:
+            layers.append(Dropout(dropout_rate))
+        in_dim = hidden_size
+
+    layers.append(Dense(in_dim, num_classes))
     return NeuralNetwork(layers, SoftmaxWithLoss())
 
 
@@ -113,11 +137,10 @@ def main():
         x_train_split, x_val_split = x_train[:split_idx], x_train[split_idx:]
         t_train_split, t_val_split = t_train[:split_idx], t_train[split_idx:]
         tuner = HyperparameterTuner(
-            build_network=lambda config: build_required_network(
+            build_network=lambda config: build_network_from_config(
                 input_dim=x_train.shape[1],
-                hidden1=32,
-                hidden2=16,
                 num_classes=t_train.shape[1],
+                config=config,
             ),
             x_train=x_train_split,
             t_train=t_train_split,
@@ -129,17 +152,57 @@ def main():
             learning_rates=[0.01, 0.001, 0.1],
             batch_sizes=[64, 100, 128],
             hidden_sizes=[32, 64, 128],
-            optimizer_types=["sgd", "momentum", "adam"],
+            optimizer_types=["adam"],
             dropout_rates=[0.0, 0.2, 0.3],
-            epochs_list=[1, 2],
+            epochs_list=[40, 45, 50],
+            num_layers_list=[2, 3],
+            activation_types=["relu", "sigmoid", "tanh"],
         )
-
+        best_params = results["best_params"]
         print("\n" + "=" * 60)
         print(f"Best Validation Accuracy: {results['best_score']:.4f}")
         print("\nBest Parameters:")
         for param, value in results["best_params"].items():
             print(f"  {param}: {value}")
-        return
+        print("\n" + "=" * 60)
+        print("Training final model with best hyperparameters...")
+        print("=" * 60)
+        final_network = build_network_from_config(
+            input_dim=x_train.shape[1],
+            num_classes=t_train.shape[1],
+            config=best_params,
+        )
+
+        final_optimizer = HyperparameterTuner._create_optimizer(
+            best_params["optimizer_type"],
+            best_params["learning_rate"],
+        )
+
+        final_trainer = Trainer(
+            final_network,
+            final_optimizer,
+            x_train,
+            t_train,
+            x_test,
+            t_test,
+            epochs=best_params["epochs"],
+            batch_size=best_params["batch_size"],
+            eval_interval=1,
+        )
+
+        final_history = final_trainer.fit()
+
+        final_train_acc = final_history["train_accuracy"][-1]
+        final_test_acc = final_history["val_accuracy"][-1]
+
+        print(
+            f"\nFinal Result "
+            f"| Train Acc: {final_train_acc:.4f} "
+            f"| Test Acc: {final_test_acc:.4f}"
+        )
+
+        plot_history(final_history)
+
     else:
         print("=" * 60)
         network = build_required_network(

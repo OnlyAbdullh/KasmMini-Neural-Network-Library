@@ -59,3 +59,26 @@ class MeanSquaredError:
             raise RuntimeError("forward must be called before backward")
         batch_size = self.t.shape[0]
         return dout * (self.y - self.t) / batch_size
+
+"""
+    @staticmethod
+    def _softmax(x: np.ndarray) -> np.ndarray:
+        x = x - np.max(x, axis=1, keepdims=True)
+        exp_x = np.exp(x)
+        return exp_x / np.sum(exp_x, axis=1, keepdims=True)
+
+    def forward(self, x: np.ndarray, t: np.ndarray) -> float:
+        if t.ndim == 1:
+            one_hot = np.zeros((t.size, x.shape[1]), dtype=float)
+            one_hot[np.arange(t.size), t] = 1.0
+            t = one_hot
+        if x.shape[0] != t.shape[0]:
+            raise ValueError("x and t must have the same batch size")
+
+        self.t = t
+        self.y = self._softmax(x)
+        batch_size = x.shape[0]
+        self.loss = -np.sum(
+            np.log(self.y[np.arange(batch_size), t.argmax(axis=1)] + 1e-7)
+        ) / batch_size
+        return self.loss"""

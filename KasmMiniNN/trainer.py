@@ -33,7 +33,7 @@ class Trainer:
         self.history: Dict[str, List[float]] = {
             "iteration_loss": [],
             "train_accuracy": [],
-            "val_accuracy": []
+            "test_accuracy": []
         }
 
     def _iterate_minibatches(self) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
@@ -50,7 +50,7 @@ class Trainer:
 
     def fit(self, verbose: bool = True) -> Dict[str, List[float]]:
         if verbose:
-            print(f"{'Epoch':>6} | {'Train Acc':>10} | {'Val Acc':>10}")
+            print(f"{'Epoch':>6} | {'Train Acc':>10} | {'Test Acc':>10}")
             print("-" * 40)
 
         for epoch in range(1, self.epochs + 1):
@@ -62,7 +62,7 @@ class Trainer:
             val_acc = self.network.accuracy(self.x_val, self.t_val)
 
             self.history["train_accuracy"].append(train_acc)
-            self.history["val_accuracy"].append(val_acc)
+            self.history["test_accuracy"].append(val_acc)
 
             if verbose and epoch % self.eval_interval == 0:
                 print(f"{epoch:6d} | {train_acc:10.4f} | {val_acc:10.4f}")

@@ -106,7 +106,7 @@ def plot_history(history):
 
     plt.subplot(1, 2, 2)
     plt.plot(epochs, history["train_accuracy"], label="Train Acc")
-    plt.plot(epochs, history["val_accuracy"], label="Val Acc")
+    plt.plot(epochs, history["test_accuracy"], label="Val Acc")
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.title("Accuracy per Epoch")
@@ -193,7 +193,7 @@ def main():
         final_history = final_trainer.fit()
 
         final_train_acc = final_history["train_accuracy"][-1]
-        final_test_acc = final_history["val_accuracy"][-1]
+        final_test_acc = final_history["test_accuracy"][-1]
 
         print(
             f"\nFinal Result "
@@ -228,8 +228,8 @@ def main():
         history = trainer.fit()
 
         final_train_acc = history["train_accuracy"][-1]
-        final_val_acc = history["val_accuracy"][-1]
-        print(f"\nfinal Result - Train Acc: {final_train_acc:.4f} | Val Acc: {final_val_acc:.4f}")
+        final_val_acc = history["test_accuracy"][-1]
+        print(f"\nfinal Result - Train Acc: {final_train_acc:.4f} | Test Acc: {final_val_acc:.4f}")
 
         plot_history(history)
 

@@ -5,14 +5,25 @@ from .losses import SoftmaxWithLoss, MeanSquaredError
 
 
 class NeuralNetwork:
-    def __init__(self, layers: List[Layer], loss_layer: Union[SoftmaxWithLoss, MeanSquaredError]):
+    def __init__(
+            self,
+            layers: List[Layer],
+            loss_layer: Union[SoftmaxWithLoss, MeanSquaredError],
+    ):
         if not layers:
             raise ValueError("at least one layer is required")
         self.layers = layers
         self.loss_layer = loss_layer
         self.params: Dict[str, np.ndarray] = {}
         self.grads: Dict[str, np.ndarray] = {}
+        self.training: bool = True
         self._aggregate_params()
+
+    def train(self, mode: bool = True) -> None:
+        self.training = mode
+
+    def eval(self) -> None:
+        self.train(False)
 
     def init_weight(self, method: str = "he") -> None:
         for layer in self.layers:
@@ -42,27 +53,34 @@ class NeuralNetwork:
                 grads[f"{layer.__class__.__name__}{idx}_{name}"] = grad
         self.grads = grads
 
-    def forward(self, x: np.ndarray, train: bool = True) -> np.ndarray:
+    def forward(self, x: np.ndarray, train: Optional[bool] = None) -> np.ndarray:
+        if train is None:
+            train = self.training
         for layer in self.layers:
             x = layer.forward(x, train=train)
         return x
 
     def predict(self, x: np.ndarray) -> np.ndarray:
-        scores = self.forward(x, train=False)
+        self.eval()
+        scores = self.forward(x)  # train=False ضمنياً
         return np.argmax(scores, axis=1)
 
-    def loss(self, x: np.ndarray, t: np.ndarray, train: bool = True) -> float:
+    def loss(self, x: np.ndarray, t: np.ndarray, train: Optional[bool] = None) -> float:
+        if train is None:
+            train = self.training
         scores = self.forward(x, train=train)
         return self.loss_layer.forward(scores, t)
 
     def accuracy(self, x: np.ndarray, t: np.ndarray) -> float:
-        scores = self.forward(x, train=False)
+        self.eval()
+        scores = self.forward(x)  # eval mode
         preds = np.argmax(scores, axis=1)
         if t.ndim != 1:
             t = np.argmax(t, axis=1)
         return np.sum(preds == t).astype(float) / float(x.shape[0])
 
     def gradient(self, x: np.ndarray, t: np.ndarray) -> Dict[str, np.ndarray]:
+        self.train(True)
         self.loss(x, t, train=True)
         dout = self.loss_layer.backward(1.0)
         for layer in reversed(self.layers):
@@ -70,27 +88,3 @@ class NeuralNetwork:
         self._aggregate_params()
         self._aggregate_grads()
         return self.grads
-
-
-def build_mlp(
-        input_size: int,
-        hidden_sizes: List[int],
-        output_size: int,
-        use_batchnorm: bool = False,
-        dropout_rate: Optional[float] = None,
-) -> NeuralNetwork:
-    from .activations import Relu
-    from .regularization import BatchNormalization, Dropout
-
-    layers: List[Layer] = []
-    layer_sizes = [input_size] + hidden_sizes + [output_size]
-    for i in range(len(layer_sizes) - 1):
-        layers.append(Dense(layer_sizes[i], layer_sizes[i + 1]))
-        if i < len(hidden_sizes):
-            if use_batchnorm:
-                layers.append(BatchNormalization(layer_sizes[i + 1]))
-            layers.append(Relu())
-            if dropout_rate is not None:
-                layers.append(Dropout(dropout_rate))
-    loss_layer = SoftmaxWithLoss()
-    return NeuralNetwork(layers, loss_layer)

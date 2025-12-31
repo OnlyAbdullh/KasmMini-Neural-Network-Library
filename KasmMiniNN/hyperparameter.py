@@ -38,10 +38,11 @@ class HyperparameterTuner:
             hidden_sizes: List[int],
             optimizer_types: List[str],
             dropout_rates: List[float],
-            epochs_list: List[int] = None,
-            num_layers_list: List[int] = None,
-            activation_types: List[str] = None,
+            epochs_list: List[int] | None = None,
+            num_layers_list: List[int] | None = None,
+            activation_types: List[str] | None = None,
     ) -> Dict[str, Any]:
+        np.random.seed(42)
         if epochs_list is None:
             epochs_list = [5]
         if num_layers_list is None:
@@ -49,7 +50,7 @@ class HyperparameterTuner:
         if activation_types is None:
             activation_types = ["relu"]
 
-        best_score = -1.0
+        best_val_accuracy = -1.0
         best_params: Dict[str, Any] = {}
         all_results: List[Dict[str, Any]] = []
 
@@ -63,7 +64,7 @@ class HyperparameterTuner:
                 num_layers_list,
                 activation_types
         ):
-            config = {
+            config: Dict[str, Any] = {
                 "learning_rate": lr,
                 "batch_size": batch,
                 "hidden_size": hidden,
@@ -77,27 +78,29 @@ class HyperparameterTuner:
             network = self.build_network(config)
             optimizer = self._create_optimizer(opt_name, lr)
             trainer = Trainer(
-                network,
-                optimizer,
-                self.x_train,
-                self.t_train,
-                self.x_val,
-                self.t_val,
+                network=network,
+                optimizer=optimizer,
+                x_train=self.x_train,
+                t_train=self.t_train,
+                x_val=self.x_val,
+                t_val=self.t_val,
+                x_test=None,
+                t_test=None,
                 epochs=epoch_num,
                 batch_size=batch,
                 eval_interval=epoch_num,
             )
             history = trainer.fit(verbose=False)
-            val_acc = history["val_accuracy"][-1]
+            val_acc = history["val_accuracy"][-1] if history["val_accuracy"] else 0.0
             record = {**config, "val_accuracy": val_acc}
             all_results.append(record)
 
-            if val_acc > best_score:
-                best_score = val_acc
+            if val_acc > best_val_accuracy:
+                best_val_accuracy = val_acc
                 best_params = config
 
         return {
-            "best_score": best_score,
+            "best_val_accuracy": best_val_accuracy,
             "best_params": best_params,
             "results": all_results,
         }

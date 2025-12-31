@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_iris
@@ -14,7 +14,10 @@ from KasmMiniNN import (
     SoftmaxWithLoss,
     NeuralNetwork,
     SGD,
-    Trainer, HyperparameterTuner, Tanh, Dropout,
+    Trainer,
+    HyperparameterTuner,
+    Tanh,
+    Dropout,
 )
 
 
@@ -53,20 +56,52 @@ def build_network_from_config(input_dim: int, num_classes: int, config: Dict[str
     return NeuralNetwork(layers, SoftmaxWithLoss())
 
 
-def prepare_iris():
+def prepare_iris(
+        train_size: float = 0.7,
+        val_size: float = 0.15,
+        test_size: float = 0.15,
+        random_state: int = 42,
+) -> Tuple[np.ndarray, ...]:
+    if not np.isclose(train_size + val_size + test_size, 1.0):
+        raise ValueError("train_size + val_size + test_size must be 1.0")
+
     iris = load_iris()
     X = iris.data.astype(np.float32)
     y = iris.target.astype(int)
-    x_train, x_test, t_train_raw, t_test_raw = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+
+    x_train, x_temp, t_train_raw, t_temp_raw = train_test_split(
+        X,
+        y,
+        test_size=(1.0 - train_size),
+        random_state=random_state,
+        stratify=y,
+    )
+    val_ratio_in_temp = val_size / (val_size + test_size)
+    x_val, x_test, t_val_raw, t_test_raw = train_test_split(
+        x_temp,
+        t_temp_raw,
+        test_size=(1.0 - val_ratio_in_temp),
+        random_state=random_state,
+        stratify=t_temp_raw,
     )
     ohe = OneHotEncoder(sparse_output=False)
     t_train = ohe.fit_transform(t_train_raw.reshape(-1, 1))
+    t_val = ohe.transform(t_val_raw.reshape(-1, 1))
     t_test = ohe.transform(t_test_raw.reshape(-1, 1))
-    return x_train, x_test, t_train, t_test
+
+    return x_train, x_val, x_test, t_train, t_val, t_test
 
 
-def prepare_mnist(test_size=10000, random_state=0):
+def prepare_mnist(
+    train_size: float = 0.8,
+    val_size: float = 0.1,
+    test_size: float = 0.1,
+    random_state: int = 0,
+) -> Tuple[np.ndarray, ...]:
+
+    if not np.isclose(train_size + val_size + test_size, 1.0):
+        raise ValueError("train_size + val_size + test_size must be 1.0")
+
     X, y = fetch_openml(
         'mnist_784',
         version=1,
@@ -77,27 +112,37 @@ def prepare_mnist(test_size=10000, random_state=0):
     X = X.astype(np.float32) / 255.0  # normalization
     y = y.astype(np.int64)
 
-    x_train, x_test, t_train_raw, t_test_raw = train_test_split(
+    x_train, x_temp, t_train_raw, t_temp_raw = train_test_split(
         X,
         y,
-        test_size=test_size,
+        test_size=(1.0 - train_size),
         shuffle=True,
         stratify=y,
-        random_state=random_state
+        random_state=random_state,
+    )
+    val_ratio_in_temp = val_size / (val_size + test_size)
+    x_val, x_test, t_val_raw, t_test_raw = train_test_split(
+        x_temp,
+        t_temp_raw,
+        test_size=(1.0 - val_ratio_in_temp),
+        shuffle=True,
+        stratify=t_temp_raw,
+        random_state=random_state,
     )
 
     ohe = OneHotEncoder(sparse_output=False)
     t_train = ohe.fit_transform(t_train_raw.reshape(-1, 1))
+    t_val = ohe.transform(t_val_raw.reshape(-1, 1))
     t_test = ohe.transform(t_test_raw.reshape(-1, 1))
 
-    return x_train, x_test, t_train, t_test
+    return x_train, x_val, x_test, t_train, t_val, t_test
 
 
-def plot_history(history):
+def plot_history(history: Dict[str, list]):
     plt.figure(figsize=(12, 4))
 
     plt.subplot(1, 2, 1)
-    plt.plot(history["iteration_loss"])
+    plt.plot(history["train_iteration_loss"])
     plt.xlabel("Iteration")
     plt.ylabel("Loss")
     plt.title("Training Loss per Iteration")
@@ -106,7 +151,14 @@ def plot_history(history):
 
     plt.subplot(1, 2, 2)
     plt.plot(epochs, history["train_accuracy"], label="Train Acc")
-    plt.plot(epochs, history["test_accuracy"], label="Val Acc")
+
+    if len(history["val_accuracy"]) > 0:
+        plt.plot(epochs, history["val_accuracy"], label="Val Acc")
+
+    if len(history["test_accuracy"]) > 0:
+        test_epochs = np.linspace(1, len(epochs), len(history["test_accuracy"]))
+        plt.plot(test_epochs, history["test_accuracy"], "ro", label="Test Acc")
+
     plt.xlabel("Epoch")
     plt.ylabel("Accuracy")
     plt.title("Accuracy per Epoch")
@@ -118,58 +170,56 @@ def plot_history(history):
 
 
 def main():
-    x_train, x_test, t_train, t_test = prepare_iris()
+    x_train, x_val, x_test, t_train, t_val, t_test = prepare_iris()
     print("choose the mode:")
     print(" 1-Train the model (train)")
     print(" 2-hyperparameter tuning (tune)")
 
     choice = input("enter 1 or 2 :").strip()
-    if choice == "2":
-        mode = "tune"
-    else:
-        mode = "train"
+    mode = "tune" if choice == "2" else "train"
 
     if mode == "tune":
         print("Searching for best hyperparameters...")
         print("=" * 60)
 
-        split_idx = int(len(x_train) * 0.85)
-        x_train_split, x_val_split = x_train[:split_idx], x_train[split_idx:]
-        t_train_split, t_val_split = t_train[:split_idx], t_train[split_idx:]
         tuner = HyperparameterTuner(
             build_network=lambda config: build_network_from_config(
                 input_dim=x_train.shape[1],
                 num_classes=t_train.shape[1],
                 config=config,
             ),
-            x_train=x_train_split,
-            t_train=t_train_split,
-            x_val=x_val_split,
-            t_val=t_val_split,
+            x_train=x_train,
+            t_train=t_train,
+            x_val=x_val,
+            t_val=t_val,
         )
 
         results = tuner.grid_search(
             learning_rates=[0.01, 0.001, 0.1],
-            batch_sizes=[64, 100, 128],
-            hidden_sizes=[32, 64, 128],
+            batch_sizes=[64, 100],
+            hidden_sizes=[32, 128],
             optimizer_types=["adam"],
-            dropout_rates=[0.0, 0.2, 0.3],
-            epochs_list=[40, 45, 50],
-            num_layers_list=[2, 3],
-            activation_types=["relu", "sigmoid", "tanh"],
+            dropout_rates=[0.0, 0.3],
+            epochs_list=[10],
+            num_layers_list=[2],
+            activation_types=["relu"],
         )
         best_params = results["best_params"]
         print("\n" + "=" * 60)
-        print(f"Best Validation Accuracy: {results['best_score']:.4f}")
+        print(f"Best Validation Accuracy: {results['best_val_accuracy']:.4f}")
         print("\nBest Parameters:")
-        for param, value in results["best_params"].items():
+        for param, value in best_params.items():
             print(f"  {param}: {value}")
         print("\n" + "=" * 60)
-        print("Training final model with best hyperparameters...")
+        print("Training final model with best hyperparameters on TRAIN+VAL...")
         print("=" * 60)
+
+        x_train_full = np.concatenate([x_train, x_val], axis=0)
+        t_train_full = np.concatenate([t_train, t_val], axis=0)
+
         final_network = build_network_from_config(
-            input_dim=x_train.shape[1],
-            num_classes=t_train.shape[1],
+            input_dim=x_train_full.shape[1],
+            num_classes=t_train_full.shape[1],
             config=best_params,
         )
 
@@ -179,12 +229,14 @@ def main():
         )
 
         final_trainer = Trainer(
-            final_network,
-            final_optimizer,
-            x_train,
-            t_train,
-            x_test,
-            t_test,
+            network=final_network,
+            optimizer=final_optimizer,
+            x_train=x_train_full,
+            t_train=t_train_full,
+            x_val=None,
+            t_val=None,
+            x_test=x_test,
+            t_test=t_test,
             epochs=best_params["epochs"],
             batch_size=best_params["batch_size"],
             eval_interval=1,
@@ -193,10 +245,14 @@ def main():
         final_history = final_trainer.fit()
 
         final_train_acc = final_history["train_accuracy"][-1]
-        final_test_acc = final_history["test_accuracy"][-1]
+        final_test_acc = (
+            final_history["test_accuracy"][-1]
+            if len(final_history["test_accuracy"]) > 0
+            else float("nan")
+        )
 
         print(
-            f"\nFinal Result "
+            f"\nFinal Result (TRAIN+VAL) "
             f"| Train Acc: {final_train_acc:.4f} "
             f"| Test Acc: {final_test_acc:.4f}"
         )
@@ -216,10 +272,12 @@ def main():
         trainer = Trainer(
             network,
             optimizer,
-            x_train,
-            t_train,
-            x_test,
-            t_test,
+            x_train=x_train,
+            t_train=t_train,
+            x_val=x_val,
+            t_val=t_val,
+            x_test=x_test,
+            t_test=t_test,
             epochs=20,
             batch_size=100,
             eval_interval=10,
@@ -228,8 +286,23 @@ def main():
         history = trainer.fit()
 
         final_train_acc = history["train_accuracy"][-1]
-        final_val_acc = history["test_accuracy"][-1]
-        print(f"\nfinal Result - Train Acc: {final_train_acc:.4f} | Test Acc: {final_val_acc:.4f}")
+        final_val_acc = (
+            history["val_accuracy"][-1]
+            if len(history["val_accuracy"]) > 0
+            else float("nan")
+        )
+        final_test_acc = (
+            history["test_accuracy"][-1]
+            if len(history["test_accuracy"]) > 0
+            else float("nan")
+        )
+
+        print(
+            f"\nFinal Result - "
+            f"Train Acc: {final_train_acc:.4f} "
+            f"| Val Acc: {final_val_acc:.4f} "
+            f"| Test Acc: {final_test_acc:.4f}"
+        )
 
         plot_history(history)
 

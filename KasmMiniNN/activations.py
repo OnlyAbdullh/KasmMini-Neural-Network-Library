@@ -10,9 +10,7 @@ class Relu(Layer):
 
     def forward(self, x: np.ndarray, train: bool = True) -> np.ndarray:
         self.mask = x <= 0
-        out = x.copy()
-        out[self.mask] = 0
-        return out
+        return np.maximum(0, x)
 
     def backward(self, dout: np.ndarray) -> np.ndarray:
         if self.mask is None:
@@ -21,7 +19,8 @@ class Relu(Layer):
         dout[self.mask] = 0
         return dout
 
-class LeakyReLU(Layer):
+class LeakyRelu(Layer):
+
     def __init__(self, alpha: float = 0.01):
         self.alpha = alpha
         self.mask: Optional[np.ndarray] = None

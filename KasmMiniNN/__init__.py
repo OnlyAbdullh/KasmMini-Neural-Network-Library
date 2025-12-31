@@ -1,7 +1,7 @@
 from .layers import Layer, Dense
-from .activations import Relu, Sigmoid, Tanh, Linear
+from .activations import Relu, LeakyRelu, Sigmoid, Tanh, Linear
 from .regularization import Dropout, BatchNormalization
-from .losses import SoftmaxWithLoss, MeanSquaredError
+from .losses import SoftmaxCrossEntropy, MeanSquaredError
 from .optimizers import Optimizer, SGD, Momentum, AdaGrad, Adam
 from .network import NeuralNetwork
 from .trainer import Trainer
@@ -16,10 +16,11 @@ __all__ = [
     "Relu",
     "Sigmoid",
     "Tanh",
+    "LeakyRelu",
     "Linear",
     "Dropout",
     "BatchNormalization",
-    "SoftmaxWithLoss",
+    "SoftmaxCrossEntropy",
     "MeanSquaredError",
     "Optimizer",
     "SGD",

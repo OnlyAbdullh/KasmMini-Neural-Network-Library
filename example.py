@@ -10,7 +10,7 @@ from KasmMiniNN import (
     Sigmoid,
     Relu,
     BatchNormalization,
-    SoftmaxWithLoss,
+    SoftmaxCrossEntropy,
     NeuralNetwork,
     SGD,
     Trainer,
@@ -29,7 +29,7 @@ def build_required_network(input_dim: int, hidden1: int, hidden2: int, num_class
         Relu(),
         Dense(hidden2, num_classes),
     ]
-    return NeuralNetwork(layers, SoftmaxWithLoss())
+    return NeuralNetwork(layers, SoftmaxCrossEntropy())
 
 
 def build_network_from_config(input_dim: int, num_classes: int, config: Dict[str, Any]) -> NeuralNetwork:
@@ -52,7 +52,7 @@ def build_network_from_config(input_dim: int, num_classes: int, config: Dict[str
         in_dim = hidden_size
 
     layers.append(Dense(in_dim, num_classes))
-    return NeuralNetwork(layers, SoftmaxWithLoss())
+    return NeuralNetwork(layers, SoftmaxCrossEntropy())
 
 
 def prepare_iris(

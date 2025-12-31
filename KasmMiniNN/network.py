@@ -1,14 +1,14 @@
 import numpy as np
 from typing import Dict, List, Union, Optional
 from .layers import Layer, Dense
-from .losses import SoftmaxWithLoss, MeanSquaredError
+from .losses import SoftmaxCrossEntropy, MeanSquaredError, BinaryCrossEntropy
 
 
 class NeuralNetwork:
     def __init__(
             self,
             layers: List[Layer],
-            loss_layer: Union[SoftmaxWithLoss, MeanSquaredError],
+            loss_layer: Union[SoftmaxCrossEntropy, MeanSquaredError, BinaryCrossEntropy],
     ):
         if not layers:
             raise ValueError("at least one layer is required")
@@ -62,7 +62,7 @@ class NeuralNetwork:
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         self.eval()
-        scores = self.forward(x)  # train=False ضمنياً
+        scores = self.forward(x, train=False)
         return np.argmax(scores, axis=1)
 
     def loss(self, x: np.ndarray, t: np.ndarray, train: Optional[bool] = None) -> float:

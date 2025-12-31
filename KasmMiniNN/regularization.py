@@ -8,7 +8,7 @@ class Dropout(Layer):
         if not 0.0 <= dropout_ratio < 1.0:
             raise ValueError("dropout_ratio must be in [0,1)")
         self.dropout_ratio = dropout_ratio
-        self.mask: Optional[np.ndarray]
+        self.mask: Optional[np.ndarray] = None
 
     def forward(self, x: np.ndarray, train: bool = True) -> np.ndarray:
         if train:

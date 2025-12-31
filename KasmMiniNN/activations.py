@@ -21,6 +21,23 @@ class Relu(Layer):
         dout[self.mask] = 0
         return dout
 
+class LeakyReLU(Layer):
+    def __init__(self, alpha: float = 0.01):
+        self.alpha = alpha
+        self.mask: Optional[np.ndarray] = None
+
+    def forward(self, x: np.ndarray, train: bool = True) -> np.ndarray:
+        self.mask = x <= 0
+        out = x.copy()
+        out[self.mask] *= self.alpha
+        return out
+
+    def backward(self, dout: np.ndarray) -> np.ndarray:
+        if self.mask is None:
+            raise RuntimeError("forward must be called before backward")
+        dx = dout.copy()
+        dx[self.mask] *= self.alpha
+        return dx
 
 class Sigmoid(Layer):
 

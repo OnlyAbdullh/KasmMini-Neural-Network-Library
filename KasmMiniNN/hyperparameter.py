@@ -1,6 +1,7 @@
 import itertools
 from typing import Callable, Dict, List, Any
 import numpy as np
+from sklearn.model_selection import KFold
 
 from .trainer import Trainer
 from .optimizers import SGD, Momentum, AdaGrad, Adam, Optimizer
@@ -42,7 +43,6 @@ class HyperparameterTuner:
             num_layers_list: List[int] | None = None,
             activation_types: List[str] | None = None,
     ) -> Dict[str, Any]:
-        np.random.seed(42)
         if epochs_list is None:
             epochs_list = [5]
         if num_layers_list is None:

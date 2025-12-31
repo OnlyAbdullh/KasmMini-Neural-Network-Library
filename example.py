@@ -1,11 +1,10 @@
 from typing import Dict, Any, Tuple
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.datasets import fetch_openml
-
+from plotting import plot_history
 from KasmMiniNN import (
     Dense,
     Sigmoid,
@@ -138,36 +137,6 @@ def prepare_mnist(
     return x_train, x_val, x_test, t_train, t_val, t_test
 
 
-def plot_history(history: Dict[str, list]):
-    plt.figure(figsize=(12, 4))
-
-    plt.subplot(1, 2, 1)
-    plt.plot(history["train_iteration_loss"])
-    plt.xlabel("Iteration")
-    plt.ylabel("Loss")
-    plt.title("Training Loss per Iteration")
-
-    epochs = np.arange(1, len(history["train_accuracy"]) + 1)
-
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs, history["train_accuracy"], label="Train Acc")
-
-    if len(history["val_accuracy"]) > 0:
-        plt.plot(epochs, history["val_accuracy"], label="Val Acc")
-
-    if len(history["test_accuracy"]) > 0:
-        test_epochs = np.linspace(1, len(epochs), len(history["test_accuracy"]))
-        plt.plot(test_epochs, history["test_accuracy"], "ro", label="Test Acc")
-
-    plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
-    plt.title("Accuracy per Epoch")
-    plt.legend()
-
-    plt.tight_layout()
-    plt.savefig("training_curves.png", dpi=200)
-    print("Saved training_curves.png")
-
 
 def main():
     x_train, x_val, x_test, t_train, t_val, t_test = prepare_iris()
@@ -204,6 +173,7 @@ def main():
             num_layers_list=[2],
             activation_types=["relu"],
         )
+
         best_params = results["best_params"]
         print("\n" + "=" * 60)
         print(f"Best Validation Accuracy: {results['best_val_accuracy']:.4f}")

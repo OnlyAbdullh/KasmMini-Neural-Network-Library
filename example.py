@@ -149,12 +149,17 @@ def main():
     print(" 1 - Train the model (train)")
     print(" 2 - Grid Search (tune)")
     print(" 3 - Random Search (random)")
+    print(" 4 - K-Fold Grid Search (kfold)")
 
-    choice = input("Enter 1, 2, or 3: ").strip()
+    choice = input("Enter 1, 2, 3, or 4: ").strip()
 
-    if choice == "2" or choice == "3":
-        search_type = "Grid Search" if choice == "2" else "Random Search"
-        print(f"\nSearching for best hyperparameters using {search_type}...")
+    if choice in {"2", "3", "4"}:
+        search_names = {
+            "2": "Grid Search",
+            "3": "Random Search",
+            "4": "K-Fold Grid Search",
+        }
+        print(f"\nSearching for best hyperparameters using {search_names[choice]}...")
         print("=" * 60)
 
         tuner = HyperparameterTuner(
@@ -180,7 +185,7 @@ def main():
                 num_layers_list=[2],
                 activation_types=["relu"],
             )
-        else:
+        elif choice == "3":
             results = tuner.random_search(
                 learning_rates=[0.01, 0.001, 0.1, 0.0001],
                 batch_sizes=[32, 64, 100, 128],
@@ -191,6 +196,19 @@ def main():
                 epochs_list=[10, 15],
                 num_layers_list=[1, 2, 3],
                 activation_types=["relu", "tanh"],
+                random_state=42,
+            )
+        else:
+            results = tuner.kfold_search(
+                learning_rates=[0.01, 0.001],
+                batch_sizes=[64, 100],
+                hidden_sizes=[32, 128],
+                optimizer_types=["adam"],
+                dropout_rates=[0.0, 0.3],
+                epochs_list=[10],
+                num_layers_list=[1, 2],
+                activation_types=["relu"],
+                n_splits=5,
                 random_state=42,
             )
 
@@ -233,7 +251,6 @@ def main():
         )
 
         final_history = final_trainer.fit()
-
         final_train_acc = final_history["train_accuracy"][-1]
         final_test_acc = (
             final_history["test_accuracy"][-1]
@@ -246,7 +263,6 @@ def main():
             f"| Train Acc: {final_train_acc:.4f} "
             f"| Test Acc: {final_test_acc:.4f}"
         )
-
         plot_history(final_history)
 
     else:
@@ -274,7 +290,6 @@ def main():
         )
 
         history = trainer.fit()
-
         final_train_acc = history["train_accuracy"][-1]
         final_val_acc = (
             history["val_accuracy"][-1]
@@ -293,7 +308,6 @@ def main():
             f"| Val Acc: {final_val_acc:.4f} "
             f"| Test Acc: {final_test_acc:.4f}"
         )
-
         plot_history(history)
 
 

@@ -176,3 +176,96 @@ class HyperparameterTuner:
             "best_params": best_params,
             "results": all_results,
         }
+
+    def kfold_search(
+            self,
+            learning_rates: List[float],
+            batch_sizes: List[int],
+            hidden_sizes: List[int],
+            optimizer_types: List[str],
+            dropout_rates: List[float],
+            epochs_list: List[int] | None = None,
+            num_layers_list: List[int] | None = None,
+            activation_types: List[str] | None = None,
+            n_splits: int = 5,
+            random_state: int | None = None,
+            shuffle: bool = True,
+    ) -> Dict[str, Any]:
+        if epochs_list is None:
+            epochs_list = [5]
+        if num_layers_list is None:
+            num_layers_list = [1]
+        if activation_types is None:
+            activation_types = ["relu"]
+        if n_splits <= 1:
+            raise ValueError("n_splits must be > 1 for KFold")
+
+        kf = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+
+        best_val_accuracy = float("-inf")
+        best_params: Dict[str, Any] = {}
+        all_results: List[Dict[str, Any]] = []
+
+        for lr, batch, hidden, opt_name, drop, epoch_num, num_layers, activation in itertools.product(
+                learning_rates,
+                batch_sizes,
+                hidden_sizes,
+                optimizer_types,
+                dropout_rates,
+                epochs_list,
+                num_layers_list,
+                activation_types,
+        ):
+            config: Dict[str, Any] = {
+                "learning_rate": lr,
+                "batch_size": batch,
+                "hidden_size": hidden,
+                "optimizer_type": opt_name,
+                "dropout_rate": drop,
+                "epochs": epoch_num,
+                "num_layers": num_layers,
+                "activation": activation,
+            }
+
+            fold_accuracies: List[float] = []
+
+            for train_idx, val_idx in kf.split(self.x_train):
+                x_tr, x_va = self.x_train[train_idx], self.x_train[val_idx]
+                t_tr, t_va = self.t_train[train_idx], self.t_train[val_idx]
+
+                network = self.build_network(config)
+                optimizer = self._create_optimizer(opt_name, lr)
+                trainer = Trainer(
+                    network=network,
+                    optimizer=optimizer,
+                    x_train=x_tr,
+                    t_train=t_tr,
+                    x_val=x_va,
+                    t_val=t_va,
+                    x_test=None,
+                    t_test=None,
+                    epochs=epoch_num,
+                    batch_size=batch,
+                    eval_interval=epoch_num,
+                )
+                history = trainer.fit(verbose=False)
+                val_acc = (
+                    history["val_accuracy"][-1]
+                    if len(history["val_accuracy"]) > 0
+                    else float("-inf")
+                )
+                fold_accuracies.append(val_acc)
+
+            mean_val_acc = float(np.mean(fold_accuracies))
+            record = {**config, "val_accuracy": mean_val_acc}
+            all_results.append(record)
+
+            if mean_val_acc > best_val_accuracy:
+                best_val_accuracy = mean_val_acc
+                best_params = config
+
+        return {
+            "best_val_accuracy": best_val_accuracy,
+            "best_params": best_params,
+            "results": all_results,
+        }

@@ -1,9 +1,6 @@
 from typing import Dict, Any, Tuple
 import numpy as np
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.datasets import fetch_openml
+from datasets import prepare_dataset
 from plotting import plot_history
 from KasmMiniNN import (
     Dense,
@@ -55,96 +52,15 @@ def build_network_from_config(input_dim: int, num_classes: int, config: Dict[str
     return NeuralNetwork(layers, SoftmaxCrossEntropy())
 
 
-def prepare_iris(
-        train_size: float = 0.7,
-        val_size: float = 0.15,
-        test_size: float = 0.15,
-        random_state: int = 42,
-) -> Tuple[np.ndarray, ...]:
-    if not np.isclose(train_size + val_size + test_size, 1.0):
-        raise ValueError("train_size + val_size + test_size must be 1.0")
-
-    iris = load_iris()
-    X = iris.data.astype(np.float32)
-    y = iris.target.astype(int)
-
-    x_train, x_temp, t_train_raw, t_temp_raw = train_test_split(
-        X,
-        y,
-        test_size=(1.0 - train_size),
-        random_state=random_state,
-        stratify=y,
-    )
-    val_ratio_in_temp = val_size / (val_size + test_size)
-    x_val, x_test, t_val_raw, t_test_raw = train_test_split(
-        x_temp,
-        t_temp_raw,
-        test_size=(1.0 - val_ratio_in_temp),
-        random_state=random_state,
-        stratify=t_temp_raw,
-    )
-    ohe = OneHotEncoder(sparse_output=False)
-    t_train = ohe.fit_transform(t_train_raw.reshape(-1, 1))
-    t_val = ohe.transform(t_val_raw.reshape(-1, 1))
-    t_test = ohe.transform(t_test_raw.reshape(-1, 1))
-
-    return x_train, x_val, x_test, t_train, t_val, t_test
-
-
-def prepare_mnist(
-        train_size: float = 0.8,
-        val_size: float = 0.1,
-        test_size: float = 0.1,
-        random_state: int = 0,
-) -> Tuple[np.ndarray, ...]:
-    if not np.isclose(train_size + val_size + test_size, 1.0):
-        raise ValueError("train_size + val_size + test_size must be 1.0")
-
-    X, y = fetch_openml(
-        'mnist_784',
-        version=1,
-        return_X_y=True,
-        as_frame=False
-    )
-
-    X = X.astype(np.float32) / 255.0  # normalization
-    y = y.astype(np.int64)
-
-    x_train, x_temp, t_train_raw, t_temp_raw = train_test_split(
-        X,
-        y,
-        test_size=(1.0 - train_size),
-        shuffle=True,
-        stratify=y,
-        random_state=random_state,
-    )
-    val_ratio_in_temp = val_size / (val_size + test_size)
-    x_val, x_test, t_val_raw, t_test_raw = train_test_split(
-        x_temp,
-        t_temp_raw,
-        test_size=(1.0 - val_ratio_in_temp),
-        shuffle=True,
-        stratify=t_temp_raw,
-        random_state=random_state,
-    )
-
-    ohe = OneHotEncoder(sparse_output=False)
-    t_train = ohe.fit_transform(t_train_raw.reshape(-1, 1))
-    t_val = ohe.transform(t_val_raw.reshape(-1, 1))
-    t_test = ohe.transform(t_test_raw.reshape(-1, 1))
-
-    return x_train, x_val, x_test, t_train, t_val, t_test
-
-
 def main():
     print("Choose the dataset:")
     print(" 1 - Iris")
     print(" 2 - mnist")
     choice = input("Enter 1, 2: ").strip()
     if choice == "1":
-        x_train, x_val, x_test, t_train, t_val, t_test = prepare_iris()
+        x_train, x_val, x_test, t_train, t_val, t_test = prepare_dataset('iris')
     else:
-        x_train, x_val, x_test, t_train, t_val, t_test = prepare_mnist()
+        x_train, x_val, x_test, t_train, t_val, t_test = prepare_dataset('mnist')
     print("Choose the mode:")
     print(" 1 - Train the model (train)")
     print(" 2 - Grid Search (tune)")
@@ -181,7 +97,7 @@ def main():
                 hidden_sizes=[32, 128],
                 optimizer_types=["adam"],
                 dropout_rates=[0.0, 0.3],
-                epochs_list=[10],
+                epochs_list=[10, 15, 20],
                 num_layers_list=[2],
                 activation_types=["relu"],
             )

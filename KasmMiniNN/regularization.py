@@ -95,7 +95,7 @@ class BatchNormalization(Layer):
         dxc += (2.0 / self.batch_size) * self.xc * dvar
         dmu = np.sum(dxc, axis=0)
 
-        dx = dxc - dmu / self.batch_size
+        dx = dxc - (dmu / self.batch_size)
 
         self.dgamma = dgamma
         self.dbeta = dbeta

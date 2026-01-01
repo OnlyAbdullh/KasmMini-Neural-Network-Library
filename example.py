@@ -19,7 +19,6 @@ from KasmMiniNN import (
     Dropout,
 )
 
-
 def build_required_network(input_dim: int, hidden1: int, hidden2: int, num_classes: int) -> NeuralNetwork:
     layers = [
         Dense(input_dim, hidden1),
@@ -137,18 +136,19 @@ def prepare_mnist(
     return x_train, x_val, x_test, t_train, t_val, t_test
 
 
-
 def main():
     x_train, x_val, x_test, t_train, t_val, t_test = prepare_iris()
-    print("choose the mode:")
-    print(" 1-Train the model (train)")
-    print(" 2-hyperparameter tuning (tune)")
 
-    choice = input("enter 1 or 2 :").strip()
-    mode = "tune" if choice == "2" else "train"
+    print("Choose the mode:")
+    print(" 1 - Train the model (train)")
+    print(" 2 - Grid Search (tune)")
+    print(" 3 - Random Search (random)")
 
-    if mode == "tune":
-        print("Searching for best hyperparameters...")
+    choice = input("Enter 1, 2, or 3: ").strip()
+
+    if choice == "2" or choice == "3":
+        search_type = "Grid Search" if choice == "2" else "Random Search"
+        print(f"\nSearching for best hyperparameters using {search_type}...")
         print("=" * 60)
 
         tuner = HyperparameterTuner(
@@ -163,16 +163,30 @@ def main():
             t_val=t_val,
         )
 
-        results = tuner.grid_search(
-            learning_rates=[0.01, 0.001, 0.1],
-            batch_sizes=[64, 100],
-            hidden_sizes=[32, 128],
-            optimizer_types=["adam"],
-            dropout_rates=[0.0, 0.3],
-            epochs_list=[10],
-            num_layers_list=[2],
-            activation_types=["relu"],
-        )
+        if choice == "2":
+            results = tuner.grid_search(
+                learning_rates=[0.01, 0.001, 0.1],
+                batch_sizes=[64, 100],
+                hidden_sizes=[32, 128],
+                optimizer_types=["adam"],
+                dropout_rates=[0.0, 0.3],
+                epochs_list=[10],
+                num_layers_list=[2],
+                activation_types=["relu"],
+            )
+        else:
+            results = tuner.random_search(
+                learning_rates=[0.01, 0.001, 0.1, 0.0001],
+                batch_sizes=[32, 64, 100, 128],
+                hidden_sizes=[32, 64, 128, 256],
+                optimizer_types=["adam", "sgd"],
+                dropout_rates=[0.0, 0.1, 0.3, 0.5],
+                n_iter=20,
+                epochs_list=[10, 15],
+                num_layers_list=[1, 2, 3],
+                activation_types=["relu", "tanh"],
+                random_state=42,
+            )
 
         best_params = results["best_params"]
         print("\n" + "=" * 60)

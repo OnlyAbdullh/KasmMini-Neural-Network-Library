@@ -26,11 +26,17 @@ class Dense(Layer):
             input_size: int,
             output_size: int,
             weight_init: str = "he",
-            bias_init: float = 0.0,
+            bias_init: float = 0.
     ):
         if input_size <= 0 or output_size <= 0:
             raise ValueError("input_size and output_size must be positive")
-        scale = np.sqrt(2.0 / input_size) if weight_init == "he" else 0.01
+        if weight_init == "he":
+            scale = np.sqrt(2.0 / input_size)
+        elif weight_init == "xavier":
+            scale = np.sqrt(1.0 / input_size)
+        else:
+            scale = 0.01
+
         self.W: np.ndarray = np.random.randn(input_size, output_size) * scale
         self.b: np.ndarray = np.full(output_size, bias_init, dtype=float)
         self.x: np.ndarray | None = None

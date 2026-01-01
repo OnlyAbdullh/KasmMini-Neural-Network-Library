@@ -19,6 +19,7 @@ from KasmMiniNN import (
     Dropout,
 )
 
+
 def build_required_network(input_dim: int, hidden1: int, hidden2: int, num_classes: int) -> NeuralNetwork:
     layers = [
         Dense(input_dim, hidden1),
@@ -91,12 +92,11 @@ def prepare_iris(
 
 
 def prepare_mnist(
-    train_size: float = 0.8,
-    val_size: float = 0.1,
-    test_size: float = 0.1,
-    random_state: int = 0,
+        train_size: float = 0.8,
+        val_size: float = 0.1,
+        test_size: float = 0.1,
+        random_state: int = 0,
 ) -> Tuple[np.ndarray, ...]:
-
     if not np.isclose(train_size + val_size + test_size, 1.0):
         raise ValueError("train_size + val_size + test_size must be 1.0")
 
@@ -137,8 +137,14 @@ def prepare_mnist(
 
 
 def main():
-    x_train, x_val, x_test, t_train, t_val, t_test = prepare_iris()
-
+    print("Choose the dataset:")
+    print(" 1 - Iris")
+    print(" 2 - mnist")
+    choice = input("Enter 1, 2: ").strip()
+    if choice == "1":
+        x_train, x_val, x_test, t_train, t_val, t_test = prepare_iris()
+    else:
+        x_train, x_val, x_test, t_train, t_val, t_test = prepare_mnist()
     print("Choose the mode:")
     print(" 1 - Train the model (train)")
     print(" 2 - Grid Search (tune)")

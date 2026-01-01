@@ -19,7 +19,7 @@ class Relu(Layer):
         dout[self.mask] = 0
         return dout
 
-class LeakyRelu(Layer):
+class LeakyReLU(Layer):
 
     def __init__(self, alpha: float = 0.01):
         self.alpha = alpha
